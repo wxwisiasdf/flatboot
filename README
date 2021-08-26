@@ -1,0 +1,18 @@
+Flatboot is a simple bootloader, it will load your kernel and you'll be happy
+very simple!, no complexity needed!
+
+********************************************************************************
+Compiling
+********************************************************************************
+Flatboot uses autotools as the main build system generator because it's very based
+
+In order to generate the configuration scripts you only need to run:
+"autoreconf"
+
+Use "./configure --host=s390-linux --target=s390-linux" in order to configure
+for a MVS-compatible target.
+
+You'll need make, hercules and dasd-utils (they come with hercules by default).
+
+In order to run the system just do:
+"./run.sh"
