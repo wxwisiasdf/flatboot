@@ -451,7 +451,6 @@ int find_file(struct fdscb *out_dscb, const char *name) {
           kprintf("DSCB CYL=%x,HEAD=%x %s\n", (unsigned)dscb1.start_cc, (unsigned)dscb1.start_hh, &dscb1.ds1dsnam);
           kprintf("     CYL=%x,HEAD=%x\n", (unsigned)dscb1.end_cc, (unsigned)dscb1.end_hh);
           if(!memcmp(&dscb1.ds1dsnam, name, strlen(name))) {
-            while(1);
             out_dscb->cyl = dscb1.start_cc;
             out_dscb->head = dscb1.start_hh;
             out_dscb->rec = 1;

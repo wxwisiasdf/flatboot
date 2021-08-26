@@ -18,7 +18,7 @@ SECTIONS {
         *(.bss*);
 
         stack_bottom = .;
-        . += 4K;
+        . += 8K;
         stack_top = .;
         bss_end = .;
     }
