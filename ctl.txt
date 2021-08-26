@@ -1,3 +1,5 @@
 FLAT00       3390-1 * stage1.txt
 STAGE2.BIN   SEQ stage2/stage2.bin        TRK 10 1 0 PS FB 1 18452
 SYSVTOC      VTOC                         CYL  2
+LIMINE.CFG   SEQ barebones/limine.cfg     CYL  1 1 0 PS FB 1 128
+KERNEL.ELF   SEQ barebones/kernel         CYL  1 1 0 PS FB 1 18452

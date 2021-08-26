@@ -122,7 +122,7 @@ static int diag8_write(const void *buf, size_t size) {
   //memcpy(&tmpbuf[6], buf, size);
   tmpbuf[size + 6] = '\0';
 
-  asm volatile("diag %0, %1, 8"
+  __asm__ __volatile__("diag %0, %1, 8"
                :
                : "r"(&tmpbuf[0]), "r"(size + 6)
                : "cc", "memory");
@@ -130,10 +130,9 @@ static int diag8_write(const void *buf, size_t size) {
 }
 
 static void kflush(void) {
-  size_t i = 0;
   *out_ptr = '\0';
   out_ptr = (char *)&tmpbuf[6];
-  diag8_write(out_ptr[i], strlen(out_ptr));
+  diag8_write(out_ptr, strlen(out_ptr));
   return;
 }
 
@@ -381,31 +380,52 @@ struct fdscb {
   uint8_t rec;
 };
 
+struct dscb_fmt1 {
+  char ds1dsnam[44];
+  char ds1fmtid;
+  uint8_t unused[60];
+  uint8_t ext_type;
+  uint8_t ext_seq_num;
+  uint16_t start_cc;
+  uint16_t start_hh;
+  uint16_t end_cc;
+  uint16_t end_hh;
+} __attribute__((packed));
+
+#include <stddef.h>
 int find_file(struct fdscb *out_dscb, const char *name) {
-  struct {
+  /* If we make a struct like this gcc generates code which incorrectly
+   * handle start_cc and start_hh */
+  /* __attribute__((packed)) struct {
     char ds1dsnam[44];
     char ds1fmtid;
-    char unused1[60];
-    char unused2;
-    char unused3;
+    uint8_t unused[60];
+    uint8_t ext_type;
+    uint8_t ext_seq_num;
     uint16_t start_cc;
     uint16_t start_hh;
     uint16_t end_cc;
     uint16_t end_hh;
-  } dscb1;
+  } dscb1; */
+
+  /* We have to make it like this */
+  struct dscb_fmt1 dscb1;
+
   int cyl, head, rec;
   int r = 0, errcnt = 0;
   struct fdscb fdscb;
+
+  kprintf("'x%x\n", (unsigned)offsetof(struct dscb_fmt1, start_cc));
+  kprintf("%p\n", dscb1);
 
   r = read_disk(schid, 0, 0, 3, &disk_buffer, 32767);
   if(r >= 20) {
     memcpy(&fdscb.cyl, (char *)&disk_buffer + 15, 2); /* 15-16 */
     memcpy(&fdscb.head, (char *)&disk_buffer + 17, 2); /* 17-18 */
     memcpy(&fdscb.rec, (char *)&disk_buffer + 19, 1); /* 19-19 */
-
-    cyl = fdscb.cyl;
-    head = fdscb.head;
-    rec = fdscb.rec;
+    cyl = (int)fdscb.cyl;
+    head = (int)fdscb.head;
+    rec = (int)fdscb.rec;
 
     while(errcnt < 4) {
       r = read_disk(schid, (uint16_t)cyl, (uint16_t)head, (uint8_t)rec, &dscb1, sizeof(dscb1));
@@ -428,11 +448,13 @@ int find_file(struct fdscb *out_dscb, const char *name) {
       if(r >= (int)sizeof(dscb1)) {
         if(dscb1.ds1fmtid == '1') {
           dscb1.ds1fmtid = ' ';
-          kprintf("DSCB CYL=%zu,HEAD=%zu,R=%zu %s\n", (size_t)cyl, (size_t)head, (size_t)rec, &dscb1.ds1dsnam);
+          kprintf("DSCB CYL=%x,HEAD=%x %s\n", (unsigned)dscb1.start_cc, (unsigned)dscb1.start_hh, &dscb1.ds1dsnam);
+          kprintf("     CYL=%x,HEAD=%x\n", (unsigned)dscb1.end_cc, (unsigned)dscb1.end_hh);
           if(!memcmp(&dscb1.ds1dsnam, name, strlen(name))) {
-            out_dscb->cyl = cyl;
-            out_dscb->head = head;
-            out_dscb->rec = rec;
+            while(1);
+            out_dscb->cyl = dscb1.start_cc;
+            out_dscb->head = dscb1.start_hh;
+            out_dscb->rec = 1;
             break;
           }
         } else if(dscb1.ds1dsnam[0] == '\0') {
@@ -456,6 +478,28 @@ static struct stivale2_struct st2_boot_cfg = {
   .bootloader_brand = "ENTERPRISE SYSTEM ARCHITECTURE 360, 370 AND 390 BOOTLOADER",
   .bootloader_version = "FRAMEBOOT VERSION 1.0, PRE-ALPHA",
   .tags = 0,
+};
+
+struct elf32_hdr {
+  uint8_t id[4];
+  uint8_t bits;
+  uint8_t endian;
+  uint8_t hdr_version;
+  uint8_t abi;
+  uint64_t unused;
+  uint16_t type;
+  uint16_t instr_set;
+  uint32_t version;
+  uint32_t entry;
+  uint32_t prog_tab;
+  uint32_t sect_tab;
+  uint32_t flags;
+  uint16_t hdr_size;
+  uint32_t prog_tab_entry_size;
+  uint32_t n_prog_tab_entry;
+  uint32_t sect_tab_entry_size;
+  uint32_t n_sect_tab_entry;
+  uint16_t str_shtab_idx;
 };
 
 int main(void) {
@@ -482,13 +526,20 @@ int main(void) {
   /* TODO: Read limine.cfg */
   r = find_file(&fdscb, "KERNEL.BIN");
   if(r != 0) {
-    kprintf("No kernel\n");
-    while(1);
+    kprintf("No kernel - trying .ELF\n");
+    r = find_file(&fdscb, "KERNEL.ELF");
+    if(r != 0) {
+      kprintf("No kernel\n");
+      while(1);
+    }
   }
 
-  /* Get size of record */
+  /* Read kernel */
   r = read_disk(schid, fdscb.cyl, fdscb.head, fdscb.rec, &disk_buffer, 32767);
   kprintf("Kernel has a size of %zu\n", (size_t)r);
+
+  struct elf32_hdr *hdr = (struct elf32_hdr *)&disk_buffer;
+  kprintf("Entry: %p\n", (uintptr_t)hdr->entry);
 
   while (1)
     ;

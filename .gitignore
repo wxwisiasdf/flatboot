@@ -3,6 +3,7 @@ compile
 *.in
 config.*
 configure
+configure~
 depcomp
 install-sh
 missing
@@ -20,3 +21,6 @@ stage1/stage1
 *.log
 *.cckd
 tools/bin2rec
+barebones/kernel
+
+Makefile

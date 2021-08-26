@@ -14,5 +14,8 @@ for a MVS-compatible target.
 
 You'll need make, hercules and dasd-utils (they come with hercules by default).
 
-In order to run the system just do:
-"./run.sh"
+In order to compile the bootloader just do:
+"./compile.sh"
+
+To build a "test" system use:
+"./test.sh"
