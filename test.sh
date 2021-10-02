@@ -1,4 +1,8 @@
 #!/bin/bash
+
+export PATH="$PATH:$HOME/opt/cross/s390-linux/bin"
+#./configure --host=s390-linux --target=s390-linux
+
 ./compile.sh || exit
 
 rm flat00.cckd
