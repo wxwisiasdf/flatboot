@@ -5,6 +5,7 @@
 start:
     # Set the stack pointer
     larl %r15, stack_top
+    brasl %r14, main
 
     # Clear bss
     lhi %r0, 0
