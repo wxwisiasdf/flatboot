@@ -1,9 +1,11 @@
 ENTRY(start);
+
 SECTIONS {
-    . = 0x4000;
+    . = 0;
     .text : {
-        KEEP(*(.text.init));
-        *(.text.*);
+        *(.text.init);
+        . = 8192;
+        *(.text*);
     }
     .rodata : {
         *(.rodata*);
@@ -11,18 +13,11 @@ SECTIONS {
     .data : {
         *(.data*);
     }
-
     .bss : {
-        bss_start = .;
         *(COMMON);
         *(.bss*);
-
-        stack_bottom = .;
-        . += 8K;
-        stack_top = .;
-        bss_end = .;
     }
 
-    . = ALIGN(4K);
+    . = 0x4000;
     disk_buffer = .;
 }

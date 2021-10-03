@@ -4,6 +4,8 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+void to_ebcdic(char *str);
+
 int diag8_write(const void *buf, size_t size);
 void kflush(void);
 int kprintf(const char *fmt, ...);

@@ -59,7 +59,9 @@ static char *elf32_get_string(struct elf32_hdr *hdr, int off) {
 
 typedef void (*stivale2_entry_t)(struct stivale2_struct *);
 
-int load_kernel(void *data) {
+int load_kernel(
+    void *data)
+{
     struct elf32_hdr *hdr = (struct elf32_hdr *)data;
     uintptr_t stack_top = 18452, entry_point = 0;
     size_t i, j;
@@ -128,16 +130,14 @@ int load_kernel(void *data) {
     /* TODO: We should load modules and such */
 
     kprintf("Loading kernel\n");
+
+    /*if(entry_point <= 8192) {
+        kprintf("Invalid entry point %p\n", (uintptr_t)entry_point);
+        while(1);
+    }*/
     
     stivale2_entry_t entry = (stivale2_entry_t)entry_point;
-
-    /* Set the stack */
-    __asm__ __volatile__(
-        "la 15, 0(%0)\n"
-        "br %1\n"
-        :
-        : "r"(stack_top), "r"(entry)
-        :);
+    entry(NULL);
     
     kprintf("Returned from kernel\n");
     while(1);

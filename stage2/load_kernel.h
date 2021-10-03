@@ -59,16 +59,61 @@ struct elf32_symbol {
     uint16_t section_idx;
 };
 
-enum elf32_section_types {
-    SHT_PROGRAM_BIT = 0x01,
-    SHT_SYMBOL_TABLE = 0x02,
-    SHT_STRING_TABLE = 0x03,
+struct elf32_rel {
+    uint32_t offset;
+    uint32_t info;
 };
 
-enum elf32_section_flags {
+struct elf32_rela {
+    uint32_t offset;
+    uint32_t info;
+    int32_t addend;
+};
+
+enum elf_symbol_bindings {
+    STB_LOCAL = 0,
+    STB_GLOBAL = 1,
+    STB_WEAK = 2
+};
+
+enum elf_symbol_types {
+    STT_NOTYPE = 0,
+    STT_OBJECT = 1,
+    STT_FUNC = 2
+};
+
+enum elf_section_types {
+    SHT_PROGRAM_BIT = 0x01,
+    SHT_SYMBOL_TABLE = 0x02,
+    SHT_STRING_TABLE = 0x03
+};
+
+enum elf_section_flags {
     SHF_WRITABLE = 0x01,
     SHF_ALLOCATE = 0x02,
-    SHF_STRINGS = 0x20,
+    SHF_STRINGS = 0x20
+};
+
+enum elf_reloc_types {
+    R_390_NONE = 0,
+    R_390_8 = 1,
+    R_390_12 = 2,
+    R_390_16 = 3,
+    R_390_32 = 4,
+    R_390_PC32 = 5,
+    R_390_GOT12 = 6,
+    R_390_GOT32 = 7,
+    R_390_PLT32 = 8,
+    R_390_COPY = 9,
+    R_390_GLOB_DAT = 10,
+    R_390_JMP_SLOT = 11,
+    R_390_RELATIVE = 12,
+    R_390_GOTOFF = 13,
+    R_390_GOTPC = 14,
+    R_390_GOT16 = 15,
+    R_390_PC16 = 16,
+    R_390_PC16DBL = 17,
+    R_390_PLT16DBL = 18
 };
 
 #endif

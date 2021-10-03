@@ -25,6 +25,27 @@ static const unsigned char ebc2asc[256] = {
     0xcb, 0xcf, 0xcc, 0xe1, 0x70, 0xdd, 0xde, 0xdb, 0xdc, 0x8d, 0x8e, 0x8f,
 };
 
+void to_ebcdic(
+    char *str)
+{
+    size_t i, j;
+    
+    for(i = 0; i < strlen(str); i++) {
+        size_t j;
+
+        if(str[i] < 0x20 || str[i] > 0x80) {
+            continue;
+        }
+
+        for(j = 0; j < 256; j++) {
+            if(ebc2asc[j] == str[i]) {
+                str[i] = ebc2asc[str[i]];
+                break;
+            }
+        }
+    }
+}
+
 static char numbuf[32], tmpbuf[80];
 char *out_ptr = (char *)&tmpbuf[6];
 int diag8_write(
