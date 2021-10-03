@@ -59,12 +59,28 @@ static char *elf32_get_string(struct elf32_hdr *hdr, int off) {
 
 typedef void (*stivale2_entry_t)(struct stivale2_struct *);
 
+void term_write(const char *data, size_t len) {
+    kprintf(data);
+    return;
+}
+
+static struct stivale2_struct_tag_terminal st2_term = {
+    .tag.identifier = STIVALE2_STRUCT_TAG_TERMINAL_ID,
+    .tag.next = 0,
+    .cols = 80,
+    .rows = 25,
+    .max_length = 80,
+    .term_write = 0
+};
+
 int load_kernel(
     void *data)
 {
     struct elf32_hdr *hdr = (struct elf32_hdr *)data;
     uintptr_t stack_top = 18452, entry_point = 0;
     size_t i, j;
+
+    st2_term.term_write = (uint64_t)&term_write;
     
     kprintf("Entry: %p\n", (uintptr_t)hdr->entry);
     kprintf("StringShdrOffset: %u\n", (unsigned)hdr->str_shtab_idx);
@@ -120,6 +136,8 @@ int load_kernel(
             entry_point = st2hdr->entry_point;
 
             kprintf("Stivale 2 header\n");
+
+            /* TODO: I think we are supposed to do something with this section :S */
         }
     }
 
@@ -127,17 +145,12 @@ int load_kernel(
         entry_point = hdr->entry;
     }
 
-    /* TODO: We should load modules and such */
-
+    /* TODO: We should load modules and such for the kernel */
     kprintf("Loading kernel\n");
 
-    /*if(entry_point <= 8192) {
-        kprintf("Invalid entry point %p\n", (uintptr_t)entry_point);
-        while(1);
-    }*/
-    
+    /* TODO: Use the stack of the kernel instead of ours */
     stivale2_entry_t entry = (stivale2_entry_t)entry_point;
-    entry(NULL);
+    entry(&st2_term);
     
     kprintf("Returned from kernel\n");
     while(1);
