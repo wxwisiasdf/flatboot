@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 #include <css.h>
 #include <stddef.h>
 #include <dasd.h>
@@ -51,7 +52,11 @@ static struct css_irb rb_irb = {0};
 int read_disk(struct css_schid schid, uint16_t cyl, uint16_t head, uint8_t rec,
                              void *buf, size_t n) {
     static struct s390_psw rb_wtnoer = {0x060E0000, AMBIT};
+#if (MACHINE <= M_S390)
     static struct s390_psw rb_newio = {0x000C0000, AMBIT + (uint32_t) && rb_count};
+#else
+    static struct s390x_psw rb_newio = {0x00040000 | AM64, AMBIT, 0, (uint32_t) && rb_count};
+#endif
     int r;
 
     read_block.bb = 0;
@@ -62,7 +67,12 @@ int read_disk(struct css_schid schid, uint16_t cyl, uint16_t head, uint8_t rec,
     rb_cchain[3].addr = (uint32_t)buf;
     rb_cchain[3].length = (uint16_t)n;
 
+#if (MACHINE <= M_S390)
     *((volatile uint64_t *)FLCINPSW) = *((uint64_t *)&rb_newio);
+#else
+    memcpy((void *)FLCEINPSW, &rb_newio, 16);
+#endif
+
     __asm__ __volatile__("stosm 0x78, 0x00");
     *((volatile uint32_t *)FLCCAW) = (uint32_t)&rb_cchain[0];
     r = css_test_channel(schid, &rb_irb);

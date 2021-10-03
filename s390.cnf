@@ -1,7 +1,7 @@
 # PDOS/390 has been configured to use only
 # 32 MiB so that it can run on a P390
 MAINSIZE             32
-ARCHMODE             ESA/390
+ARCHMODE             Z/ARCH
 CPUSERIAL            000611
 CPUMODEL             4381
 DIAG8CMD             ENABLE

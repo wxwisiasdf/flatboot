@@ -147,7 +147,7 @@ case "$target" in
     ;;
 esac
 
-machine_def=M_S390
+machine_def=M_ZARCH
 AC_DEFINE_UNQUOTED(MACHINE, [$machine_def],
     [The current machine type we are using from the architecture])
 
