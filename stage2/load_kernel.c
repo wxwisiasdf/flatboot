@@ -46,8 +46,7 @@ static struct elf32_shdr *elf32_get_string_section(struct elf32_hdr *hdr) {
     return elf32_get_shdr(hdr, hdr->str_shtab_idx);
 }
 
-static char *elf32_get_string(struct elf32_hdr *hdr, int off) {
-    struct elf32_shdr *shdr = elf32_get_string_section(hdr);
+static char *elf32_get_string(struct elf32_hdr *hdr, struct elf32_shdr *shdr, int off) {
     if(shdr == NULL) {
         return NULL;
     }
@@ -63,6 +62,12 @@ void term_write(const char *data, size_t len) {
     kprintf(data);
     return;
 }
+
+static struct stivale2_struct st2_boot_cfg = {
+    .bootloader_brand = "ENTERPRISE SYSTEM ARCHITECTURE 360, 370 AND 390 BOOTLOADER",
+    .bootloader_version = "FRAMEBOOT VERSION 1.0, PRE-ALPHA",
+    .tags = 0,
+};
 
 static struct stivale2_struct_tag_terminal st2_term = {
     .tag.identifier = STIVALE2_STRUCT_TAG_TERMINAL_ID,
@@ -80,6 +85,7 @@ int load_kernel(
     uintptr_t stack_top = 18452, entry_point = 0;
     size_t i, j;
 
+    st2_boot_cfg.tags = &st2_term;
     st2_term.term_write = (uint64_t)&term_write;
     
     kprintf("Entry: %p\n", (uintptr_t)hdr->entry);
@@ -104,21 +110,17 @@ int load_kernel(
 
         /* If it's a symbol table we will look up stuff starting with stack_top or stack */
         if(shdr->type == SHT_SYMBOL_TABLE) {
+            struct elf32_symbol *symtab = (struct elf32_symbol *)((uintptr_t)data + shdr->offset);
             for(j = 0; j < shdr->size / sizeof(struct elf32_symbol); j++) {
-                struct elf32_symbol *sym = &((struct elf32_symbol *)((uintptr_t)data + shdr->offset))[j];
-                kprintf("Name of symbol: %e\n", elf32_get_string(hdr, sym->name));
+                struct elf32_symbol *sym = &symtab[j];
+
+                kprintf("Name of symbol: %e\n", elf32_get_string(hdr, elf32_get_string_section(hdr), sym->name));
+                kprintf("Info=%zu, Other=%zu, Sh=%zu, Size=%zu, Value=%zu\n", (size_t)sym->info, (size_t)sym->other, (size_t)sym->section_idx, (size_t)sym->size, (size_t)sym->value);
             }
         }
 
-        /* Ignore stuff like the debugging sections and so on */
-        if((shdr->type == SHT_PROGRAM_BIT && (shdr->flags == 0 || shdr->flags == 48))
-        || shdr->type == SHT_SYMBOL_TABLE
-        || shdr->type == SHT_STRING_TABLE) {
-            continue;
-        }
-
         kprintf("Name=%e, Address=%p(FILE %u), Size=%u, Type=%u, Flags=%u\n",
-            elf32_get_string(hdr, shdr->name), (uintptr_t)shdr->addr, (unsigned)shdr->offset,
+            elf32_get_string(hdr, elf32_get_string_section(hdr), shdr->name), (uintptr_t)shdr->addr, (unsigned)shdr->offset,
             (unsigned)shdr->size, (unsigned)shdr->type, (unsigned)shdr->flags);
         
         /*if((uintptr_t)shdr->addr <= min_kernal_addr) {
@@ -130,7 +132,7 @@ int load_kernel(
         memcpy((void *)shdr->addr, (const void *)((uintptr_t)data + shdr->offset), shdr->size);
 
         /* Stivale2 header */
-        if(!memcmp(elf32_get_string(hdr, shdr->name), ASCII_STIVALE2_HDR, 12)) {
+        if(!memcmp(elf32_get_string(hdr, elf32_get_string_section(hdr), shdr->name), ASCII_STIVALE2_HDR, 12)) {
             struct stivale2_header *st2hdr = (struct stivale2_header *)shdr->addr;
             stack_top = st2hdr->stack;
             entry_point = st2hdr->entry_point;
@@ -145,12 +147,12 @@ int load_kernel(
         entry_point = hdr->entry;
     }
 
-    /* TODO: We should load modules and such for the kernel */
-    kprintf("Loading kernel\n");
-
     /* TODO: Use the stack of the kernel instead of ours */
     stivale2_entry_t entry = (stivale2_entry_t)entry_point;
-    entry(&st2_term);
+
+    /* TODO: We should load modules and such for the kernel */
+    kprintf("Loading kernel w entry @ %p\n", entry);
+    entry(&st2_boot_cfg);
     
     kprintf("Returned from kernel\n");
     while(1);

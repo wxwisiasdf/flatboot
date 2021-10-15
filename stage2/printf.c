@@ -46,7 +46,7 @@ void to_ebcdic(
     }
 }
 
-static char numbuf[32], tmpbuf[80];
+static char numbuf[32], tmpbuf[160] = {0};
 char *out_ptr = (char *)&tmpbuf[6];
 int diag8_write(
     const void *buf,
@@ -54,10 +54,18 @@ int diag8_write(
 {
     size_t i;
     memcpy(&tmpbuf[0], "MSG * ", 6);
-    //memcpy(&tmpbuf[6], buf, size);
-    for(i = 0; i < size + 6; i++) {
+    for(i = 6; i < size + 6; i++) {
         if(tmpbuf[i] == '\n') {
             tmpbuf[i] = ' ';
+        }
+
+        /* Make it all uppercase just because we can */
+        if(tmpbuf[i] >= 'a' && tmpbuf[i] <= 'i') {
+            tmpbuf[i] = 'A' + (tmpbuf[i] - 'a');
+        } else if(tmpbuf[i] >= 'j' && tmpbuf[i] <= 'r') {
+            tmpbuf[i] = 'J' + (tmpbuf[i] - 'j');
+        } else if(tmpbuf[i] >= 's' && tmpbuf[i] <= 'z') {
+            tmpbuf[i] = 'S' + (tmpbuf[i] - 's');
         }
     }
 
@@ -66,11 +74,15 @@ int diag8_write(
         :
         : "r"(&tmpbuf[0]), "r"(size + 5)
         : "cc", "memory");
+
+    for(i = 0; i < sizeof(tmpbuf); i++) {
+        tmpbuf[i] = ' ';
+    }
     return 0;
 }
 
 void kflush(void) {
-    *out_ptr = '\0';
+    *(out_ptr++) = '\0';
     out_ptr = (char *)&tmpbuf[6];
     diag8_write(out_ptr, strlen(out_ptr));
     return;

@@ -4,7 +4,7 @@ LDFLAGS="-Wl,-static,--no-dynamic-linker,-ztext -nostdlib -z max-page-size=0x100
 AC_SUBST([LDFLAGS])
 CFLAGS="$CFLAGS -ffreestanding -fno-stack-protector -pipe"
 CFLAGS="$CFLAGS -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wstrict-prototypes -Wmissing-declarations -Wdouble-promotion -Wredundant-decls -Wnested-externs -Winline -Wconversion"
-CFLAGS="$CFLAGS -std=gnu99 -m31 -fexec-charset=IBM-1047 -O0 -g"
+CFLAGS="$CFLAGS -std=gnu99 -m31 -fexec-charset=IBM-1047 -g"
 ASFLAGS="$ASFLAGS -fexec-charset=IBM-1047 -g"
 
 AM_INIT_AUTOMAKE([-Wall -Wextra foreign subdir-objects])
@@ -147,7 +147,6 @@ case "$target" in
     ;;
 esac
 
-machine_def=M_ZARCH
 AC_DEFINE_UNQUOTED(MACHINE, [$machine_def],
     [The current machine type we are using from the architecture])
 

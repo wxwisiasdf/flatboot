@@ -1,22 +1,25 @@
 ENTRY(_start);
 SECTIONS {
-    . = 0x8000;
+    . = 0xf000;
     .text : {
-        *(.text.init);
+        *(.text);
         *(.text.*);
         *(.stivale2hdr*);
     }
     
     .rodata : {
-        *(.rodata*);
+        *(.rodata);
+        *(.rodata.*);
     }
 
     .data : {
-        *(.data*);
+        *(.data);
+        *(.data.*);
     }
 
     .bss : ALIGN(4K) {
         *(COMMON);
-        *(.bss*);
+        *(.bss);
+        *(.bss.*);
     }
 }

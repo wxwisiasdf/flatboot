@@ -62,15 +62,17 @@ int find_file(
     /* We have to make it like this */
     struct dscb_fmt1 dscb1;
 
+    char tmpbuf[20];
+
     int cyl, head, rec;
     int r = 0, errcnt = 0;
     struct fdscb fdscb;
 
-    r = read_disk(schid, 0, 0, 3, &disk_buffer, 20);
+    r = read_disk(schid, 0, 0, 3, &tmpbuf[0], 20);
     if(r >= 20) {
-        memcpy(&fdscb.cyl, (char *)&disk_buffer + 15, 2); /* 15-16 */
-        memcpy(&fdscb.head, (char *)&disk_buffer + 17, 2); /* 17-18 */
-        memcpy(&fdscb.rec, (char *)&disk_buffer + 19, 1); /* 19-19 */
+        memcpy(&fdscb.cyl, &tmpbuf[15], 2); /* 15-16 */
+        memcpy(&fdscb.head, &tmpbuf[17], 2); /* 17-18 */
+        memcpy(&fdscb.rec, &tmpbuf[19], 1); /* 19-19 */
         cyl = (int)fdscb.cyl;
         head = (int)fdscb.head;
         rec = (int)fdscb.rec;
@@ -97,9 +99,9 @@ int find_file(
                 if(dscb1.ds1fmtid == '1') {
                     dscb1.ds1fmtid = ' ';
                     if(!memcmp(&dscb1.ds1dsnam, name, strlen(name))) {
-                        //kprintf("**** REPORT for %s ****\n", &dscb1.ds1dsnam);
-                        //kprintf("DSCB CYL=%x %x, HEAD=%x %x\n", (unsigned)dscb1.start_cc,
-                        //    (unsigned)dscb1.end_cc, (unsigned)dscb1.start_hh, (unsigned)dscb1.end_hh);
+                        kprintf("**** REPORT for %s ****\n", &dscb1.ds1dsnam);
+                        kprintf("DSCB CYL=%u-%u, HEAD=%u-%u\n", (unsigned)dscb1.start_cc,
+                            (unsigned)dscb1.end_cc, (unsigned)dscb1.start_hh, (unsigned)dscb1.end_hh);
 
                         out_dscb->cyl = dscb1.start_cc;
                         out_dscb->head = dscb1.start_hh;
@@ -163,11 +165,46 @@ int load_file(
     return (int)((ptrdiff_t)c_buffer - (ptrdiff_t)buffer);
 }
 
-static struct stivale2_struct st2_boot_cfg = {
-    .bootloader_brand = "ENTERPRISE SYSTEM ARCHITECTURE 360, 370 AND 390 BOOTLOADER",
-    .bootloader_version = "FRAMEBOOT VERSION 1.0, PRE-ALPHA",
-    .tags = 0,
-};
+int load_file_or_sequence(
+    struct css_schid schid,
+    const char *name,
+    void *buffer)
+{
+    uint8_t *c_buffer = (uint8_t *)buffer;
+    size_t end_name = strlen(name);
+    int total_read = 0;
+    char tmpbuf[24] = {0};
+    int r;
+
+    memcpy(&tmpbuf[0], name, end_name + 1);
+    tmpbuf[end_name + 0] = '\0';
+
+    /* File may actually be a sequence */
+    int seq_num = 0;
+
+    /* A sequence of datasets is identified by NAME.XXX
+        * where XXX => number from 000 to 999, however because
+        * nobody will ever have 128 sequence files we will only allow
+        * from 0 to 9, hopefully that is enough!!! */
+    tmpbuf[end_name + 0] = '.';
+    while(seq_num <= 9) {
+        tmpbuf[end_name + 1] = '0' + seq_num;
+        tmpbuf[end_name + 2] = '\0';
+
+        r = load_file(schid, &tmpbuf[0], c_buffer);
+        if(r == 0) {
+            break;
+        }
+
+        kprintf("Sequence dataset: %s (%i characters)\n", tmpbuf, r);
+
+        c_buffer += r;
+        total_read += r;
+
+        seq_num++;
+    }
+    return total_read;
+}
 
 int main(
     void)
@@ -175,37 +212,36 @@ int main(
     struct fdscb fdscb;
     signed int r;
 
-    schid.id = 1;
-    schid.num = 1;
-    kprintf("s390 bootloader\n");
+    /*schid.id = 1;
+    schid.num = 1;*/
+
+    memcpy(&schid, (void *)0xB8, 4);
+
+    kprintf("FLATBOOT: 390 bootloader\n");
 
     read_disk(schid, 0, 0, 3, &disk_buffer, 4096);
-    
-    kprintf("Loading limine.cfg\n");
-    r = find_file(&fdscb, "LIMINE.CFG");
-    if(r != 0) {
-        kprintf("No limine.cfg found\n");
-        r = find_file(&fdscb, "FRAMEBOOT.CFG");
-        if(r != 0) {
-            kprintf("No frameboot.cfg found\n");
-            while(1);
-        }
+
+    /* Maybe the kernel is an ELF file */
+    r = find_file(&fdscb, "KERNEL.ELF");
+    if(r == 0) {
+        kprintf("Loadinf elf format kernel\n");
+
+        load_file_or_sequence(schid, "KERNEL.ELF", &disk_buffer);
+        kprintf("Kernel has a size of %zu @ %p\n", (size_t)r, &disk_buffer);
+        load_kernel(&disk_buffer);
     }
 
-    /* TODO: Read limine.cfg */
+    /* Or the kernel is a BIN file? */
     r = find_file(&fdscb, "KERNEL.BIN");
-    if(r != 0) {
-        kprintf("No kernel - trying .ELF\n");
-        r = find_file(&fdscb, "KERNEL.ELF");
-        if(r != 0) {
-            kprintf("No kernel\n");
-            while(1);
-        }
-    }
+    if(r == 0) {
+        void (*entry)(void) = &disk_buffer;
+        kprintf("Loading raw binary kernel\n");
 
-    r = load_file(schid, "KERNEL.ELF", &disk_buffer);
-    kprintf("Kernel has a size of %zu\n", (size_t)r);
-    load_kernel(&disk_buffer);
+        load_file_or_sequence(schid, "KERNEL.BIN", &disk_buffer);
+
+        kprintf("Entry at @ %p\n", entry);
+        entry();
+    }
 
     while(1);
 }
