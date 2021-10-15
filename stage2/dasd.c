@@ -76,26 +76,25 @@ int read_disk(struct css_schid schid, uint16_t cyl, uint16_t head, uint8_t rec,
     __asm__ __volatile__("stosm 0x78, 0x00");
     *((volatile uint32_t *)FLCCAW) = (uint32_t)&rb_cchain[0];
     r = css_test_channel(schid, &rb_irb);
-    if(r != 0) {
-        /*diag8_write("Test channel error", 19);
-        return -1;*/
+    if(r == 3) {
+        kprintf("Test channel error\n");
+        return -1;
     }
 
     r = css_start_channel(schid, &rb_orb);
-    if(r != 0) {
-        diag8_write("Start channel error", 20);
+    if(r == 3) {
+        kprintf("Start channel error\n");
         return -1;
     }
     __asm__ goto("lpsw %0\n" : : "m"(rb_wtnoer) : : rb_count);
 rb_count:
     r = css_test_channel(schid, &rb_irb);
-    if(r != 0) {
-        diag8_write("Test channel error", 19);
+    if(r == 3) {
+        kprintf("Test channel error\n");
         return -1;
     }
 
     if(rb_irb.scsw.cpa_addr != (uint32_t)&rb_cchain[4]) {
-        diag8_write("Channel program did not reach FINCHAIN", 39);
         return -1;
     }
     return (int)n - (int)rb_irb.scsw.count;

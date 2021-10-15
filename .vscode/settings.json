@@ -90,6 +90,7 @@
         "ASTGEN.C": "cpp",
         "stddef.h": "c",
         "mmu.h": "c",
-        "stivale2.h": "c"
+        "stivale2.h": "c",
+        "load_kernel.h": "c"
     }
 }
