@@ -14,6 +14,10 @@
         "*.ASSEMBLE*": "hlasm",
         "*.HLASM*": "hlasm",
         "*.HLA*": "hlasm",
+        "typeinfo": "cpp",
+        "regman.h": "c",
+        "type_traits": "cpp",
+        "ir.h": "c",
         "thread": "cpp",
         "stdexcept": "cpp",
         "condition_variable": "cpp",
@@ -56,7 +60,6 @@
         "string_view": "cpp",
         "system_error": "cpp",
         "tuple": "cpp",
-        "type_traits": "cpp",
         "utility": "cpp",
         "fstream": "cpp",
         "initializer_list": "cpp",
@@ -72,7 +75,6 @@
         "sstream": "cpp",
         "streambuf": "cpp",
         "cinttypes": "cpp",
-        "typeinfo": "cpp",
         "future": "cpp",
         "kmalloc.h": "c",
         "io.h": "c",
@@ -91,6 +93,7 @@
         "stddef.h": "c",
         "mmu.h": "c",
         "stivale2.h": "c",
-        "load_kernel.h": "c"
+        "load_kernel.h": "c",
+        "TELNET.C": "cpp"
     }
 }

@@ -58,10 +58,37 @@ static char *elf32_get_string(struct elf32_hdr *hdr, struct elf32_shdr *shdr, in
 
 typedef void (*stivale2_entry_t)(struct stivale2_struct *);
 
-void term_write(const char *data, size_t len) {
+void hdebug_term_write(const char *data, size_t len) {
     kprintf(data);
     return;
 }
+
+/* Im not going to make a proper allocation manager no, fuck that */
+struct stivale2_struct_any {
+    union {
+        struct stivale2_struct_tag_pmrs pmrs;
+        struct stivale2_struct_tag_cmdline cmdline;
+        struct stivale2_struct_tag_memmap memmap;
+        struct stivale2_struct_tag_framebuffer fb;
+        struct stivale2_struct_tag_edid edid;
+        struct stivale2_struct_tag_textmode textmode;
+        struct stivale2_struct_tag_terminal term;
+        struct stivale2_struct_tag_modules modules;
+        struct stivale2_struct_tag_rsdp rdsp;
+        struct stivale2_struct_tag_epoch epoch;
+        struct stivale2_struct_tag_firmware firmware;
+        struct stivale2_struct_tag_efi_system_table efi_systab;
+        struct stivale2_struct_tag_kernel_file kfile_v1;
+        struct stivale2_struct_tag_kernel_file_v2 kfile_v2;
+        struct stivale2_struct_tag_kernel_slide slide;
+        struct stivale2_struct_tag_smbios smbios;
+        struct stivale2_struct_tag_smp smp;
+        struct stivale2_struct_tag_pxe_server_info pxe_server;
+        struct stivale2_struct_tag_mmio32_uart uart;
+        struct stivale2_struct_tag_dtb dtb;
+        struct stivale2_struct_vmap vmap;
+    };
+};
 
 static struct stivale2_struct st2_boot_cfg = {
     .bootloader_brand = "ENTERPRISE SYSTEM ARCHITECTURE 360, 370 AND 390 BOOTLOADER",
@@ -69,14 +96,48 @@ static struct stivale2_struct st2_boot_cfg = {
     .tags = 0,
 };
 
-static struct stivale2_struct_tag_terminal st2_term = {
+/* --- TELNET TERMINAL DEVICE --- */
+static struct stivale2_struct_tag_terminal bc_telnet_term = {
     .tag.identifier = STIVALE2_STRUCT_TAG_TERMINAL_ID,
     .tag.next = 0,
-    .cols = 80,
-    .rows = 25,
+    .cols = 0,
+    .rows = 0,
     .max_length = 80,
     .term_write = 0
 };
+
+/* --- 3270 TERMINAL DEVICE --- */
+static struct stivale2_struct_tag_terminal bc_3270_term = {
+    .tag.identifier = STIVALE2_STRUCT_TAG_TERMINAL_ID,
+    .tag.next = 0,
+    .cols = 80,
+    .rows = 24,
+    .max_length = 80,
+    .term_write = 0
+};
+
+/* --- HERCULES DEBUG CONSOLE --- */
+static struct stivale2_struct_tag_terminal bc_herc_term = {
+    .tag.identifier = STIVALE2_STRUCT_TAG_TERMINAL_ID,
+    .tag.next = 0,
+    .cols = 80,
+    .rows = 40,
+    .max_length = 80,
+    .term_write = 0
+};
+
+static struct stivale2_struct_tag_firmware bc_firmware = {
+    .tag.identifier = STIVALE2_STRUCT_TAG_FIRMWARE_ID,
+    .tag.next = 0,
+    .flags = 0  
+};
+
+static struct stivale2_struct_tag_kernel_file bc_kernfile = {
+    .tag.identifier = STIVALE2_STRUCT_TAG_KERNEL_FILE_ID,
+    .tag.next = 0,
+};
+
+void telnet_term_write(const char *data, size_t len);
 
 int load_kernel(
     void *data)
@@ -85,9 +146,21 @@ int load_kernel(
     uintptr_t stack_top = 18452, entry_point = 0;
     size_t i, j;
 
-    st2_boot_cfg.tags = &st2_term;
-    st2_term.term_write = (uint64_t)&term_write;
+    bc_kernfile.tag.next = 0;
     
+    bc_firmware.tag.next = &bc_kernfile;
+
+    bc_telnet_term.tag.next = &bc_firmware;
+    bc_telnet_term.term_write = (uint64_t)&telnet_term_write;
+
+    bc_3270_term.tag.next = &bc_telnet_term;
+    bc_3270_term.term_write = (uint64_t)&telnet_term_write;
+
+    bc_herc_term.tag.next = &bc_3270_term;
+    bc_herc_term.term_write = (uint64_t)&hdebug_term_write;
+
+    st2_boot_cfg.tags = &bc_herc_term;
+
     kprintf("Entry: %p\n", (uintptr_t)hdr->entry);
     kprintf("StringShdrOffset: %u\n", (unsigned)hdr->str_shtab_idx);
     kprintf("SectTable: Size=%u,Num=%u,Offset=%u\n", (unsigned)hdr->sect_tab_entry_size, (unsigned)hdr->n_sect_tab_entry, (unsigned)hdr->sect_tab);

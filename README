@@ -1,21 +1,46 @@
-Flatboot is a simple bootloader, it will load your kernel and you'll be happy
-very simple!, no complexity needed!
+FLATBOOT IS A SIMPLE BOOTLOADER, IT WILL LOAD YOUR KERNEL AND YOU'LL BE HAPPY
+VERY SIMPLE!, NO COMPLEXITY NEEDED!
 
 ********************************************************************************
-Compiling
+COMPILING
 ********************************************************************************
-Flatboot uses autotools as the main build system generator because it's very based
+FLATBOOT USES AUTOTOOLS AS THE MAIN BUILD SYSTEM GENERATOR BECAUSE IT'S VERY
+BASED
 
-In order to generate the configuration scripts you only need to run:
-"autoreconf"
+IN ORDER TO GENERATE THE CONFIGURATION SCRIPTS YOU ONLY NEED TO RUN:
+"AUTORECONF"
 
-Use "./configure --host=s390-linux --target=s390-linux" in order to configure
-for a MVS-compatible target.
+USE "./CONFIGURE --HOST=S390-LINUX --TARGET=S390-LINUX" IN ORDER TO CONFIGURE
+FOR A MVS-COMPATIBLE TARGET.
 
-You'll need make, hercules and dasd-utils (they come with hercules by default).
+YOU'LL NEED MAKE, HERCULES AND DASD-UTILS (THEY COME WITH HERCULES BY DEFAULT).
 
-In order to compile the bootloader just do:
-"./compile.sh"
+IN ORDER TO COMPILE THE BOOTLOADER JUST DO:
+"./COMPILE.SH"
 
-To build a "test" system use:
-"./test.sh"
+TO BUILD A "TEST" SYSTEM USE:
+"./TEST.SH"
+
+********************************************************************************
+TELNET TERMINAL SUPPORT (USING BSC LINES)
+********************************************************************************
+THE TELNET TERMINAL CAN BE USED BY CREATING A 2703 DEVICE WHICH ALLOWS READ AND
+WRITE, THIS CAN BE DONE USING THE FOLLOWING EXAPLE HERCULES CONFIGURATION:
+
+0009 2703 LPORT=3200 RHOST=EXAMPLE.COM RPORT=22 DIAL=IN
+
+RHOST AND RPORT ARE USED TO DENOTE THE IP ADDRESS OF THE TELNET SERVER WHERE
+RPORT DENOTES THE PORT OF TELNET
+
+THE TERMINAL WILL BE IN EBCDIC AND NOT IN ASCII - ACTUALLY, THE ENTIRE KERNEL
+AND BOOTLOADER USE EBCDIC
+
+********************************************************************************
+TERMINAL 3270
+********************************************************************************
+READ THE 3270 DATASTREAM PROTOCOL BECAUSE THIS IS LIKE A VT100 TERMINAL. AND YES
+IT USES ESCAPE SEQUENCES, USE THIS:
+
+X3270 -MODEL 3270 -PORT 3270 127.0.0.1
+
+TO CONNECT TO THE TERMINAL VIA X3270 ON YOUR LOCAL MACHINE.

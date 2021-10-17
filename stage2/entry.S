@@ -3,9 +3,6 @@
 .global start
 .type start, @function
 start:
-    # Set the stack pointer
-    larl %r15, stack_top
-
     # Clear bss
     lhi %r0, 0
     larl %r1, bss_start
@@ -16,5 +13,7 @@ start:
     cr %r1, %r2
     brne .loop
 
+     # Set the stack pointer
+    larl %r15, stack_top
     brasl %r14, main
 .short 0
