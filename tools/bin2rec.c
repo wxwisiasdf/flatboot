@@ -7,7 +7,7 @@
 #define EBCDIC_END "\xC5\xD5\xC4"
 #define EBCDIC_NUM(x) ((x) + 0xf0)
 #define EBCDIC_SPACE ((0x0f * 3) + 1)
-#define MAX_REC_SIZE (4096 * 4)
+#define MAX_REC_SIZE (4000)
 
 static const unsigned char zero[80] = {0};
 int bin2rec(
