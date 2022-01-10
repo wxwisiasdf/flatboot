@@ -59,7 +59,7 @@ static struct stivale2_header stivale_hdr = {
     .flags = (1 << 1) | (1 << 2),
     // This header structure is the root of the linked list of header tags and
     // points to the first one in the linked list.
-    .tags = (uintptr_t)&framebuffer_hdr_tag
+    .tags = (uintptr_t)&terminal_hdr_tag
 };
 
 // We will now write a helper function which will allow us to scan for tags
