@@ -103,9 +103,7 @@ rb_count:
     return (int)n - (int)rb_irb.scsw.count;
 }
 
-int find_file(
-    struct fdscb *out_dscb,
-    const char *name)
+int find_file(struct fdscb *out_dscb, const char *name)
 {
     /* If we make a struct like this gcc generates code which incorrectly
      * handle start_cc and start_hh */
@@ -181,10 +179,7 @@ int find_file(
     return 0;
 }
 
-int load_file(
-    struct css_schid schid,
-    const char *name,
-    void *buffer)
+int load_file(struct css_schid schid, const char *name, void *buffer)
 {
     char *c_buffer = (char *)buffer;
     struct fdscb fdscb;
@@ -196,7 +191,7 @@ int load_file(
         return -1;
     }
 
-    // Read until I/O error
+    /* Read until I/O error */
     while(errcnt < 4) {
         r = read_disk(schid, fdscb.cyl, fdscb.head, fdscb.rec, c_buffer, trk_len);
         if(r < 0) {

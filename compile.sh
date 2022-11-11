@@ -15,6 +15,6 @@ make -j || exit
 
 gcc -Wall -Wextra tools/bin2rec.c -o tools/bin2rec -lm
 
-s390-linux-objcopy -O binary stage1/stage1 stage1/stage1.bin || exit
+s390x-ibm-linux-objcopy -O binary stage1/stage1 stage1/stage1.bin || exit
 ./tools/bin2rec stage1/stage1.bin stage1.txt || exit
-s390-linux-objcopy -O binary stage2/stage2 stage2/stage2.bin || exit
+s390x-ibm-linux-objcopy -O binary stage2/stage2 stage2/stage2.bin || exit

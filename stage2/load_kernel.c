@@ -86,7 +86,9 @@ struct stivale2_struct_any {
         struct stivale2_struct_tag_pxe_server_info pxe_server;
         struct stivale2_struct_tag_mmio32_uart uart;
         struct stivale2_struct_tag_dtb dtb;
-        struct stivale2_struct_vmap vmap;
+        struct stivale2_struct_tag_hhdm hhdm;
+        struct stivale2_header_tag_slide_hhdm slide_hhdm;
+        struct stivale2_struct_tag_kernel_base_address kernel_base_address;
     };
 };
 
@@ -132,6 +134,13 @@ static struct stivale2_struct_tag_firmware bc_firmware = {
     .flags = 0  
 };
 
+static struct stivale2_struct_tag_kernel_base_address bc_kernel_base_address = {
+    .tag.identifier = STIVALE2_STRUCT_TAG_KERNEL_BASE_ADDRESS_ID,
+    .tag.next = 0,
+    .physical_base_address = 0,
+    .virtual_base_address = 0
+};
+
 static struct stivale2_struct_tag_kernel_file bc_kernfile = {
     .tag.identifier = STIVALE2_STRUCT_TAG_KERNEL_FILE_ID,
     .tag.next = 0,
@@ -147,8 +156,10 @@ int load_kernel(
     size_t i, j;
 
     bc_kernfile.tag.next = 0;
+
+    bc_kernel_base_address.tag.next = &bc_kernfile;
     
-    bc_firmware.tag.next = &bc_kernfile;
+    bc_firmware.tag.next = &bc_kernel_base_address;
 
     bc_telnet_term.tag.next = &bc_firmware;
     bc_telnet_term.term_write = (uint64_t)&telnet_term_write;
@@ -196,10 +207,10 @@ int load_kernel(
             elf32_get_string(hdr, elf32_get_string_section(hdr), shdr->name), (uintptr_t)shdr->addr, (unsigned)shdr->offset,
             (unsigned)shdr->size, (unsigned)shdr->type, (unsigned)shdr->flags);
         
-        /*if((uintptr_t)shdr->addr <= min_kernal_addr) {
+        if((uintptr_t)shdr->addr <= min_kernal_addr) {
             kprintf("Kernel violates bootloader space\n");
             while(1);
-        }*/
+        }
 
         /* Place the data from the disk buffer to the real address */
         memcpy((void *)shdr->addr, (const void *)((uintptr_t)data + shdr->offset), shdr->size);
@@ -209,9 +220,8 @@ int load_kernel(
             struct stivale2_header *st2hdr = (struct stivale2_header *)shdr->addr;
             stack_top = st2hdr->stack;
             entry_point = st2hdr->entry_point;
-
+            
             kprintf("Stivale 2 header\n");
-
             /* TODO: I think we are supposed to do something with this section :S */
         }
     }
@@ -224,7 +234,7 @@ int load_kernel(
     stivale2_entry_t entry = (stivale2_entry_t)entry_point;
 
     /* TODO: We should load modules and such for the kernel */
-    kprintf("Loading kernel w entry @ %p\n", entry);
+    kprintf("Loading kernel with entry @ %p\n", entry);
     entry(&st2_boot_cfg);
     
     kprintf("Returned from kernel\n");

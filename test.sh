@@ -7,7 +7,7 @@ export PATH="$PATH:$HOME/opt/cross/s390-linux/bin"
 
 rm flat00.cckd
 
-s390-linux-objcopy -O binary barebones/kernel barebones/kernel.bin || exit
+s390x-ibm-linux-objcopy -O binary barebones/kernel barebones/kernel.bin || exit
 
 dasdload -bz2 ctl.txt flat00.cckd || exit
 hercules -f s390.cnf >hercules.log || exit

@@ -18,11 +18,10 @@
 
 #define STIVALE_ANCHOR "\x53\x54\x49\x56\x41\x4C\x45\x32\x20\x41\x4E\x43\x48\x4F\x52"
 
-int main(
-    void)
+int main(void)
 {
     struct fdscb fdscb;
-    signed int r;
+    int r;
 
     memcpy(&schid, (void *)0xB8, 4);
 
